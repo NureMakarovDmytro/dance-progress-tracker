@@ -1,15 +1,9 @@
-import Group from "../models/group.js";
+import Group from "../models/Group.js";
 
 export const createGroup = async (req, res) => {
   try {
     const { name, schedule } = req.body;
-
-    const group = new Group({
-      name,
-      schedule,
-      teacher_id: req.user.id  // використовуємо ID адміна як викладача (тимчасово)
-    });
-
+    const group = new Group({ name, schedule, teacher_id: req.user.id });
     await group.save();
     res.status(201).json(group);
   } catch (err) {

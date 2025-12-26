@@ -8,4 +8,5 @@ const GradeSchema = new mongoose.Schema({
   given_by: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
 }, { timestamps: true });
 
-export default mongoose.model("Grade", GradeSchema);
+const Grade = mongoose.models.Grade || mongoose.model("Grade", GradeSchema);
+export default Grade;

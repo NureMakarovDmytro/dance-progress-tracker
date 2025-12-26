@@ -10,4 +10,5 @@ const ReportSchema = new mongoose.Schema({
   generated_by: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
 }, { timestamps: true });
 
-export default mongoose.model("Report", ReportSchema);
+const Report = mongoose.models.Report || mongoose.model("Report", ReportSchema);
+export default Report;

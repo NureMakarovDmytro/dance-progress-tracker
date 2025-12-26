@@ -7,4 +7,5 @@ const AttendanceSchema = new mongoose.Schema({
   marked_by: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
 }, { timestamps: true });
 
-export default mongoose.model("Attendance", AttendanceSchema);
+const Attendance = mongoose.models.Attendance || mongoose.model("Attendance", AttendanceSchema);
+export default Attendance;

@@ -1,12 +1,12 @@
 openapi: 3.0.0
 info:
   title: DanceProgressTracker API
-  description: Серверна частина системи відстеження прогресу учнів у танцювальній школі
+  description: Серверна частина системи відстеження прогресу в танцювальній школі
   version: 1.0.0
 
 servers:
   - url: http://localhost:5000/api
-    description: Локальний сервер розробки
+    description: Локальний сервер
 
 components:
   securitySchemes:
@@ -17,17 +17,13 @@ components:
 
 tags:
   - name: Auth
-    description: Автентифікація та реєстрація користувачів
+    description: Автентифікація та реєстрація
   - name: Groups
-    description: Керування танцювальними групами
+    description: Керування групами
   - name: Students
     description: Керування учнями
-  - name: Attendance
-    description: Фіксація відвідуваності занять
-  - name: Grades
-    description: Проставлення оцінок та коментарів
-  - name: Reports
-    description: Генерація та експорт звітів
+  - name: Admin
+    description: Адміністрування, статистика та звіти
 
 security:
   - bearerAuth: []
@@ -37,7 +33,7 @@ paths:
     post:
       tags:
         - Auth
-      summary: Реєстрація першого адміністратора (одноразово)
+      summary: Реєстрація першого адміністратора
       requestBody:
         required: true
         content:
@@ -54,20 +50,16 @@ paths:
                 password:
                   type: string
                   format: password
-                  example: 123456
-              required:
-                - full_name
-                - login
-                - password
+                  example: admin123
       responses:
         '201':
-          description: Адміністратор успішно створений
+          description: Адміністратор створений
 
   /auth/login:
     post:
       tags:
         - Auth
-      summary: Вхід в систему (отримання JWT-токену)
+      summary: Вхід в систему (отримання JWT)
       requestBody:
         required: true
         content:
@@ -81,19 +73,16 @@ paths:
                 password:
                   type: string
                   format: password
-                  example: 123456
-              required:
-                - login
-                - password
+                  example: admin123
       responses:
         '200':
-          description: Успішний вхід, повертається токен та дані користувача
+          description: Токен видано
 
   /groups:
     post:
       tags:
         - Groups
-      summary: Створити нову групу (лише адміністратор)
+      summary: Створити нову групу (адміністратор)
       security:
         - bearerAuth: []
       requestBody:
@@ -109,21 +98,19 @@ paths:
                 schedule:
                   type: string
                   example: Понеділок і середа о 18:00
-              required:
-                - name
       responses:
         '201':
-          description: Група успішно створена
+          description: Група створена
 
     get:
       tags:
         - Groups
-      summary: Отримати список всіх груп
+      summary: Отримати всі групи
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Список груп з даними викладача
+          description: Список груп
 
   /students:
     post:
@@ -141,25 +128,28 @@ paths:
               properties:
                 full_name:
                   type: string
+                  example: Іван Петренко
                 birth_date:
                   type: string
                   format: date
+                  example: 2010-05-15
                 phone:
                   type: string
+                  example: +380991234567
                 email:
                   type: string
+                  example: ivan@example.com
                 notes:
                   type: string
-              required:
-                - full_name
+                  example: Початківець
       responses:
         '201':
-          description: Учень успішно доданий
+          description: Учень створений
 
     get:
       tags:
         - Students
-      summary: Отримати список учнів (з фільтром по групі)
+      summary: Отримати учнів (з фільтром по групі)
       security:
         - bearerAuth: []
       parameters:
@@ -172,11 +162,11 @@ paths:
         '200':
           description: Список учнів
 
-  /attendance:
+  /students/enroll:
     post:
       tags:
-        - Attendance
-      summary: Зафіксувати відвідуваність на занятті
+        - Students
+      summary: Записати учня до групи (адміністратор)
       security:
         - bearerAuth: []
       requestBody:
@@ -186,24 +176,21 @@ paths:
             schema:
               type: object
               properties:
-                membership_id:
+                student_id:
                   type: string
-                lesson_date:
+                  example: 694f0be789606d7456613446
+                group_id:
                   type: string
-                  format: date
-                status:
-                  type: string
-                  enum: [present, absent, late, excused]
-                  default: present
+                  example: 694f0bd389606d7456613444
       responses:
         '201':
-          description: Відвідуваність зафіксовано
+          description: Учень записаний до групи
 
-  /grades:
+  /admin/teachers:
     post:
       tags:
-        - Grades
-      summary: Проставити оцінку та коментар учню
+        - Admin
+      summary: Створити викладача (адміністратор)
       security:
         - bearerAuth: []
       requestBody:
@@ -213,24 +200,83 @@ paths:
             schema:
               type: object
               properties:
-                membership_id:
+                full_name:
                   type: string
-                lesson_date:
+                login:
                   type: string
-                  format: date
-                score:
-                  type: number
-                comment:
+                password:
                   type: string
       responses:
         '201':
-          description: Оцінка проставлена
+          description: Викладач створений
 
-  /reports/generate:
+  /admin/users/{id}:
+    delete:
+      tags:
+        - Admin
+      summary: Видалити користувача (адміністратор)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Користувач видалено
+
+  /admin/groups/{id}:
+    put:
+      tags:
+        - Admin
+      summary: Редагувати групу (адміністратор)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                schedule:
+                  type: string
+      responses:
+        '200':
+          description: Група оновлена
+
+  /admin/statistics/{groupId}:
     get:
       tags:
-        - Reports
-      summary: Згенерувати звіт по групі або всім групам
+        - Admin
+      summary: Розрахунок статистики по групі
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Статистика (пропуски, середній бал)
+
+  /admin/reports:
+    get:
+      tags:
+        - Admin
+      summary: Генерація звіту
       security:
         - bearerAuth: []
       parameters:
@@ -238,7 +284,7 @@ paths:
           in: query
           schema:
             type: string
-          description: ID групи (необов'язково – якщо не вказано, звіт по всім)
+          description: ID групи (необов'язково)
         - name: period_start
           in: query
           schema:
@@ -251,4 +297,4 @@ paths:
             format: date
       responses:
         '200':
-          description: Звіт згенеровано (середній бал, пропуски, статистика)
+          description: Звіт згенеровано
