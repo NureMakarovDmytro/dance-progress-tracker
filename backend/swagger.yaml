@@ -1,0 +1,254 @@
+openapi: 3.0.0
+info:
+  title: DanceProgressTracker API
+  description: Серверна частина системи відстеження прогресу учнів у танцювальній школі
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:5000/api
+    description: Локальний сервер розробки
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+tags:
+  - name: Auth
+    description: Автентифікація та реєстрація користувачів
+  - name: Groups
+    description: Керування танцювальними групами
+  - name: Students
+    description: Керування учнями
+  - name: Attendance
+    description: Фіксація відвідуваності занять
+  - name: Grades
+    description: Проставлення оцінок та коментарів
+  - name: Reports
+    description: Генерація та експорт звітів
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/register-admin:
+    post:
+      tags:
+        - Auth
+      summary: Реєстрація першого адміністратора (одноразово)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name:
+                  type: string
+                  example: Дмитро Макаров
+                login:
+                  type: string
+                  example: admin
+                password:
+                  type: string
+                  format: password
+                  example: 123456
+              required:
+                - full_name
+                - login
+                - password
+      responses:
+        '201':
+          description: Адміністратор успішно створений
+
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Вхід в систему (отримання JWT-токену)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                login:
+                  type: string
+                  example: admin
+                password:
+                  type: string
+                  format: password
+                  example: 123456
+              required:
+                - login
+                - password
+      responses:
+        '200':
+          description: Успішний вхід, повертається токен та дані користувача
+
+  /groups:
+    post:
+      tags:
+        - Groups
+      summary: Створити нову групу (лише адміністратор)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Hip-Hop Початківці
+                schedule:
+                  type: string
+                  example: Понеділок і середа о 18:00
+              required:
+                - name
+      responses:
+        '201':
+          description: Група успішно створена
+
+    get:
+      tags:
+        - Groups
+      summary: Отримати список всіх груп
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список груп з даними викладача
+
+  /students:
+    post:
+      tags:
+        - Students
+      summary: Додати нового учня (адміністратор)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name:
+                  type: string
+                birth_date:
+                  type: string
+                  format: date
+                phone:
+                  type: string
+                email:
+                  type: string
+                notes:
+                  type: string
+              required:
+                - full_name
+      responses:
+        '201':
+          description: Учень успішно доданий
+
+    get:
+      tags:
+        - Students
+      summary: Отримати список учнів (з фільтром по групі)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: groupId
+          in: query
+          schema:
+            type: string
+          description: ID групи для фільтрації
+      responses:
+        '200':
+          description: Список учнів
+
+  /attendance:
+    post:
+      tags:
+        - Attendance
+      summary: Зафіксувати відвідуваність на занятті
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                membership_id:
+                  type: string
+                lesson_date:
+                  type: string
+                  format: date
+                status:
+                  type: string
+                  enum: [present, absent, late, excused]
+                  default: present
+      responses:
+        '201':
+          description: Відвідуваність зафіксовано
+
+  /grades:
+    post:
+      tags:
+        - Grades
+      summary: Проставити оцінку та коментар учню
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                membership_id:
+                  type: string
+                lesson_date:
+                  type: string
+                  format: date
+                score:
+                  type: number
+                comment:
+                  type: string
+      responses:
+        '201':
+          description: Оцінка проставлена
+
+  /reports/generate:
+    get:
+      tags:
+        - Reports
+      summary: Згенерувати звіт по групі або всім групам
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: groupId
+          in: query
+          schema:
+            type: string
+          description: ID групи (необов'язково – якщо не вказано, звіт по всім)
+        - name: period_start
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: period_end
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Звіт згенеровано (середній бал, пропуски, статистика)
