@@ -69,7 +69,7 @@ paths:
               properties:
                 login:
                   type: string
-                  example: admin
+                  example: admin2
                 password:
                   type: string
                   format: password
@@ -96,8 +96,16 @@ paths:
                   type: string
                   example: Hip-Hop Початківці
                 schedule:
-                  type: string
-                  example: Понеділок і середа о 18:00
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      date:
+                        type: string
+                        example: "2025-05-12"
+                      time:
+                        type: string
+                        example: "19:00"
       responses:
         '201':
           description: Група створена
@@ -250,7 +258,16 @@ paths:
                 name:
                   type: string
                 schedule:
-                  type: string
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      date:
+                        type: string
+                        example: "2025-05-12"
+                      time:
+                        type: string
+                        example: "19:00"
       responses:
         '200':
           description: Група оновлена

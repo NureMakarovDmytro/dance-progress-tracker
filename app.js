@@ -7,7 +7,7 @@ import authRoutes from "./routes/auth.js";
 import groupRoutes from "./routes/groups.js";
 import studentRoutes from "./routes/students.js";
 import adminRoutes from "./routes/admin.js";
-
+import iotRoutes from "./routes/iot.js";
 dotenv.config();
 
 const app = express();
@@ -25,7 +25,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/admin", adminRoutes);
-
+app.use("/api/iot", iotRoutes);
 const swaggerDocument = YAML.load("./swagger.yaml");
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 

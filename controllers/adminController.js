@@ -3,6 +3,8 @@ import Group from "../models/Group.js";
 import Attendance from "../models/Attendance.js";
 import Grade from "../models/Grade.js";
 import Report from "../models/Report.js";
+
+import GroupMembership from "../models/GroupMembership.js"; 
 import bcrypt from "bcryptjs";
 
 export const createTeacher = async (req, res) => {
@@ -38,8 +40,11 @@ export const updateGroup = async (req, res) => {
 export const calculateStatistics = async (req, res) => {
   try {
     const { groupId } = req.params;
+
     const memberships = await GroupMembership.find({ group_id: groupId });
     const studentIds = memberships.map(m => m.student_id);
+    
+
     const attendances = await Attendance.find({ membership_id: { $in: memberships.map(m => m._id) } });
     const grades = await Grade.find({ membership_id: { $in: memberships.map(m => m._id) } });
 
@@ -56,18 +61,32 @@ export const generateReport = async (req, res) => {
   try {
     const { groupId, period_start, period_end } = req.query;
     const filter = groupId ? { group_id: groupId } : {};
-    if (period_start) filter.lesson_date = { ...filter.lesson_date, $gte: new Date(period_start) };
-    if (period_end) filter.lesson_date = { ...filter.lesson_date, $lte: new Date(period_end) };
+    
+    let attendancesCount = 0;
+    let avgGrade = 0;
 
-    const attendances = await Attendance.find(filter);
-    const grades = await Grade.find(filter);
+    if (groupId) {
+         const memberships = await GroupMembership.find({ group_id: groupId });
+         const mIds = memberships.map(m => m._id);
+         
+         const attQuery = { membership_id: { $in: mIds }, status: "absent" };
+         if (period_start) attQuery.lesson_date = { $gte: new Date(period_start) };
+         if (period_end) {
+             attQuery.lesson_date = { ...attQuery.lesson_date, $lte: new Date(period_end) };
+         }
+         
+         attendancesCount = await Attendance.countDocuments(attQuery);
+         
+         const grades = await Grade.find({ membership_id: { $in: mIds } });
+         avgGrade = grades.length > 0 ? (grades.reduce((sum, g) => sum + g.score, 0) / grades.length).toFixed(2) : 0;
+    }
 
     const report = new Report({
-      title: groupId ? `Звіт по групі ${groupId}` : "Звіт по всім групам",
+      title: groupId ? `Звіт по групі ${groupId}` : "Загальний звіт",
       group_id: groupId || null,
       period_start: period_start || null,
       period_end: period_end || null,
-      summary: `Пропусків: ${attendances.filter(a => a.status === "absent").length}, Середній бал: ${grades.length > 0 ? (grades.reduce((sum, g) => sum + g.score, 0) / grades.length).toFixed(2) : 0}`,
+      summary: `Пропусків: ${attendancesCount}, Середній бал: ${avgGrade}`,
       generated_by: req.user.id
     });
     await report.save();
